@@ -46,6 +46,8 @@ char ** tokenizeUserInput(char* userInputAsLine)
     char ** userInputTokens = (char **)calloc(userInputTokensQuantity, sizeof(char*));
     char * remainderOfString = NULL;
     char * token = strtok_r(userInputAsLine, " ", &remainderOfString);
+
+    // Handle the case where the user entered something
     while (token != NULL)
     {
         char * savedToken = (char *)calloc(strlen(token) + 1, sizeof(char));
@@ -59,6 +61,13 @@ char ** tokenizeUserInput(char* userInputAsLine)
         token = strtok_r(NULL, " ", &remainderOfString);
 
     }
+    
+    // Handle the special case where the user just pushes the return key
+    if (userInputTokensIndex == 0)
+    {
+        free(userInputTokens);
+        return NULL;
+    }
     return userInputTokens;
 }
 
@@ -67,29 +76,38 @@ Handle the user input
 */
 bool handleUserInput(char ** userInputAsTokens)
 {
-    char * command = userInputAsTokens[0];
-    printf("You entered the command >> %s\n", command);
-    if (!(strcmp(command, "exit")))
+    // Handle blank lines entered by user/script
+    if (userInputAsTokens != NULL)
     {
-        cmd_exit();
-        return false;
-    }
-    if (!(strcmp(command, "status")))
-    {
-        cmd_status();
+        // Handle comments entered by user/script
+        if (userInputAsTokens[0][0] != '#')
+        {
+            // Handle valid lines entered by user
+            char * command = userInputAsTokens[0];
+            printf("You entered the command >> %s\n", command);
+            if (!(strcmp(command, "exit")))
+            {
+                cmd_exit();
+                return false;
+            }
+            if (!(strcmp(command, "status")))
+            {
+                cmd_status();
+                return true;
+            }
+            if (!(strcmp(command, "cd")))
+            {
+                cmd_cd();
+                return true;
+            }
+            else
+            {
+                return true;
+            }
+        }
         return true;
     }
-    if (!(strcmp(command, "cd")))
-    {
-        cmd_cd();
-        return true;
-    }
-    else
-    {
-        return true;
-    }
-    
-
+    return true;
 }
 
 
