@@ -9,35 +9,119 @@ Description: Contains the core functions to display the smallsh shell and handle
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "smallsh_commands.h"
 
+/*
+Gets user input up to the enter key, discards the newline character at the end
+*/
 static char * getUserInput()
 {
     char inputChar;
-    int inputBufferSize = 128;
+    int inputBufferSize = 4;
     int inputIndex = 0;
     char * input = (char*)calloc(inputBufferSize, sizeof(char));
-    while((inputChar = fgetc(stdin)) != '\0')
+    while((inputChar = fgetc(stdin)) != '\n')
     {
         input[inputIndex++] = inputChar;
-        if (inputIndex >= inputBufferSize)
+        if (inputIndex - 1 >= inputBufferSize)
         {
             inputBufferSize *= 2;
             input = (char*)realloc(input, inputBufferSize * sizeof(char));
         }
     }
+    input[inputIndex] = '\0';
     return input;
+}
+
+
+/*
+Tokenizes the user input with whitespace as the delimeter
+*/
+char ** tokenizeUserInput(char* userInputAsLine)
+{
+    // https://stackoverflow.com/questions/9860671/double-pointer-char-operations
+    
+    int userInputTokensIndex = 0;
+    int userInputTokensQuantity = 4;
+    char ** userInputTokens = (char **)calloc(userInputTokensQuantity, sizeof(char*));
+    char * remainderOfString = NULL;
+    char * token = strtok_r(userInputAsLine, " ", &remainderOfString);
+    while (token != NULL)
+    {
+        char * savedToken = (char *)calloc(strlen(token) + 1, sizeof(char));
+        strcpy(savedToken, token);
+        userInputTokens[userInputTokensIndex++] = savedToken;
+        if (userInputTokensIndex == userInputTokensQuantity)
+        {
+            userInputTokensQuantity *= 2;
+            userInputTokens = (char **)realloc(userInputTokens, userInputTokensQuantity * sizeof(char *));
+        }
+        token = strtok_r(NULL, " ", &remainderOfString);
+
+    }
+    return userInputTokens;
+}
+
+/*
+Handle the user input
+*/
+bool handleUserInput(char ** userInputAsTokens)
+{
+    char * command = userInputAsTokens[0];
+    printf("You entered the command >> %s\n", command);
+    if (!(strcmp(command, "exit")))
+    {
+        cmd_exit();
+        return false;
+    }
+    if (!(strcmp(command, "status")))
+    {
+        cmd_status();
+        return true;
+    }
+    if (!(strcmp(command, "cd")))
+    {
+        cmd_cd();
+        return true;
+    }
+    else
+    {
+        return true;
+    }
+    
+
+}
+
+
+/*
+DEBUG FUNCTION
+prints all the tokens from user input
+*/
+static void _test_tokens(char** tokens)
+{
+    int i = 0;
+    while(tokens[i] != NULL)
+    {
+        printf("%s\n", tokens[i++]);
+    }
 }
 
 void smallsh()
 {
     bool running = true;
     char * input = NULL;
+    char ** inputTokens = NULL;
     while (running)
     {
+        // Print the shell prompt, gather user input, tokenize the input
         printf(": ");
         input = getUserInput();
-        printf("You entered %s\n", input);
+        inputTokens = tokenizeUserInput(input);
+
+        // now handle the tokens
+        running = handleUserInput(inputTokens); 
         free(input);
+        free(inputTokens);
     }
 }
 
