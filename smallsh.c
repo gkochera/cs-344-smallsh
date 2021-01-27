@@ -102,6 +102,7 @@ bool handleUserInput(char ** userInputAsTokens)
             }
             else
             {
+                cmd_other(userInputAsTokens);
                 return true;
             }
         }

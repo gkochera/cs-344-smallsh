@@ -9,3 +9,4 @@ Description: Contains the function prototypes for handling the core commands of
 void cmd_exit();
 void cmd_cd();
 void cmd_status();
+void cmd_other();
