@@ -13,7 +13,7 @@ Description: Contains the functions for handling the core commands of 'exit', 'c
 
 void cmd_exit()
 {
-    
+    exit(EXIT_SUCCESS);
 }
 
 void cmd_cd()
@@ -21,12 +21,12 @@ void cmd_cd()
 
 }
 
-void cmd_status()
+void cmd_status(int* status)
 {
-
+    printf("exit status %d\n", *status);
 }
 
-void cmd_other(char ** tokens)
+void cmd_other(char ** tokens, int* status)
 {
     pid_t newPid = -5;
     int childStatus = 0;
@@ -42,7 +42,11 @@ void cmd_other(char ** tokens)
             break;
         default:
             newPid = waitpid(newPid, &childStatus, 0);
+            while (!WIFEXITED(childStatus) && !WIFSIGNALED(childStatus))
+            {
+
+            }
+            *status = WEXITSTATUS(childStatus);
             break;
     }
-
 }

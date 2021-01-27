@@ -9,6 +9,7 @@ Description: Contains the core functions to display the smallsh shell and handle
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "smallsh_commands.h"
 
 /*
@@ -33,6 +34,23 @@ static char * getUserInput()
     return input;
 }
 
+/*
+Checks for the $$ expansion in user input
+*/
+
+// FIXME: Handle nested expansions with surrounding characters
+static char * checkForPidExpansion (char* token)
+{
+    if (strstr(token, "$$") != NULL)
+    {
+        int smallshPid = getpid();
+        char * smallshPidAsString = (char*)calloc(8, sizeof(char));
+        sprintf(smallshPidAsString, "%d", smallshPid);
+        return smallshPidAsString;
+    }
+    return token;
+}
+
 
 /*
 Tokenizes the user input with whitespace as the delimeter
@@ -50,6 +68,7 @@ char ** tokenizeUserInput(char* userInputAsLine)
     // Handle the case where the user entered something
     while (token != NULL)
     {
+        token = checkForPidExpansion(token);
         char * savedToken = (char *)calloc(strlen(token) + 1, sizeof(char));
         strcpy(savedToken, token);
         userInputTokens[userInputTokensIndex++] = savedToken;
@@ -74,7 +93,7 @@ char ** tokenizeUserInput(char* userInputAsLine)
 /*
 Handle the user input
 */
-bool handleUserInput(char ** userInputAsTokens)
+static void handleUserInput(char ** userInputAsTokens, int* status)
 {
     // Handle blank lines entered by user/script
     if (userInputAsTokens != NULL)
@@ -84,31 +103,29 @@ bool handleUserInput(char ** userInputAsTokens)
         {
             // Handle valid lines entered by user
             char * command = userInputAsTokens[0];
-            printf("You entered the command >> %s\n", command);
             if (!(strcmp(command, "exit")))
             {
                 cmd_exit();
-                return false;
+                *status = -1;
             }
-            if (!(strcmp(command, "status")))
+            else if (!(strcmp(command, "status")))
             {
-                cmd_status();
-                return true;
+                cmd_status(status);
+                
             }
-            if (!(strcmp(command, "cd")))
+            else if (!(strcmp(command, "cd")))
             {
                 cmd_cd();
-                return true;
+                *status = 0;
             }
             else
             {
-                cmd_other(userInputAsTokens);
-                return true;
+                cmd_other(userInputAsTokens, status);
             }
         }
-        return true;
+
     }
-    return true;
+
 }
 
 
@@ -127,10 +144,10 @@ static void _test_tokens(char** tokens)
 
 void smallsh()
 {
-    bool running = true;
+    int status = 0;
     char * input = NULL;
     char ** inputTokens = NULL;
-    while (running)
+    while (true)
     {
         // Print the shell prompt, gather user input, tokenize the input
         printf(": ");
@@ -138,7 +155,7 @@ void smallsh()
         inputTokens = tokenizeUserInput(input);
 
         // now handle the tokens
-        running = handleUserInput(inputTokens); 
+        handleUserInput(inputTokens, &status); 
         free(input);
         free(inputTokens);
     }
