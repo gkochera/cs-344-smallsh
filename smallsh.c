@@ -39,12 +39,13 @@ Checks for the $$ expansion in user input
 */
 
 // FIXME: Handle nested expansions with surrounding characters
+// strchr() will be useful here
 static char * checkForPidExpansion (char* token)
 {
     if (strstr(token, "$$") != NULL)
     {
         int smallshPid = getpid();
-        char * smallshPidAsString = (char*)calloc(8, sizeof(char));
+        char * smallshPidAsString = (char*)calloc(8 + strlen(token), sizeof(char));
         sprintf(smallshPidAsString, "%d", smallshPid);
         return smallshPidAsString;
     }
