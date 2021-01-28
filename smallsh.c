@@ -177,8 +177,7 @@ static void handleUserInput(char ** userInputAsTokens, int* status)
             }
             else if (!(strcmp(command, "cd")))
             {
-                cmd_cd();
-                *status = 0;
+                cmd_cd(userInputAsTokens);
             }
             else
             {
