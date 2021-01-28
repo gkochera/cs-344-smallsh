@@ -37,19 +37,58 @@ static char * getUserInput()
 /*
 Checks for the $$ expansion in user input
 */
-
-// FIXME: Handle nested expansions with surrounding characters
-// strchr() will be useful here
 static char * checkForPidExpansion (char* token)
 {
-    if (strstr(token, "$$") != NULL)
+    char * expansionPosition;
+    char * thisToken = (char *)calloc(strlen(token), sizeof(char));
+    strcpy(thisToken, token);
+
+    // Check to see if the $$ expansion appears at least once in the token
+    if (((expansionPosition = strstr(thisToken, "$$")) != NULL))
     {
+
+        // if it does, we get the pid for smallsh, create a string with it and
+        // start the process of replacing it as many times as it occurs
         int smallshPid = getpid();
-        char * smallshPidAsString = (char*)calloc(8 + strlen(token), sizeof(char));
+        char * smallshPidAsString = (char*)calloc(8, sizeof(char));
         sprintf(smallshPidAsString, "%d", smallshPid);
-        return smallshPidAsString;
+
+        // this will hold the new token we return
+        char * newToken = (char*)calloc(strlen(token) + strlen(smallshPidAsString), sizeof(char));
+        
+        // We check to see if strstr() returned a position for $$ if it did, we replace it
+        while (expansionPosition != NULL)
+        {
+            // cat the stuff before $$
+            strncat(newToken, thisToken, (int)(expansionPosition - thisToken));
+
+            // replace $$ with the pid of smallsh
+            strncat(newToken, smallshPidAsString, strlen(smallshPidAsString));
+
+            // cat everything after $$
+            strcat(newToken, thisToken + (int)(expansionPosition - thisToken) + strlen("$$"));
+
+            // see if there are any more occurences of $$ and if there are we repeat as necessary
+            if ((expansionPosition = strstr(newToken, "$$")) != NULL)
+            {
+                // We copy over what we have expanded already
+                thisToken = (char*)realloc(newToken, strlen(newToken));
+
+                // and create space for the next expansion
+                newToken = (char*)calloc(strlen(thisToken) + strlen(smallshPidAsString), sizeof(char));
+            }
+        }
+
+        // free our dynamic memory and return the result
+        free(thisToken);
+        return newToken;
+    } 
+
+    // if strstr() didn't find $$ we just return the token as is
+    else
+    {
+        return NULL;
     }
-    return token;
 }
 
 
@@ -64,20 +103,42 @@ char ** tokenizeUserInput(char* userInputAsLine)
     int userInputTokensQuantity = 4;
     char ** userInputTokens = (char **)calloc(userInputTokensQuantity, sizeof(char*));
     char * remainderOfString = NULL;
+    char * checkedToken = NULL;
+    bool dMemUsed = false;
     char * token = strtok_r(userInputAsLine, " ", &remainderOfString);
 
     // Handle the case where the user entered something
     while (token != NULL)
     {
-        token = checkForPidExpansion(token);
+        // Check the token, handle expansion of $$, set the dMemUsed flag to true if we had to expand
+        // it because it uses dynamic memory.
+        if ((checkedToken = checkForPidExpansion(token)) != NULL)
+        {
+            token = checkedToken;
+            dMemUsed = true;
+        }
+
+        // Create a new pointer of length token + 1, and copy the token to it
         char * savedToken = (char *)calloc(strlen(token) + 1, sizeof(char));
         strcpy(savedToken, token);
+
+        // Save the token to the array of tokens, and verify we dont need to expand the array
+        // If we do, expand the array by double so we don't overflow.
         userInputTokens[userInputTokensIndex++] = savedToken;
         if (userInputTokensIndex == userInputTokensQuantity)
         {
             userInputTokensQuantity *= 2;
             userInputTokens = (char **)realloc(userInputTokens, userInputTokensQuantity * sizeof(char *));
         }
+
+        // We are done with the token, so it can be freed if it used dynamic memory.
+        if (dMemUsed)
+        {
+            free(token);
+            dMemUsed = false;
+        }
+
+        // Get our next token
         token = strtok_r(NULL, " ", &remainderOfString);
 
     }
@@ -134,14 +195,14 @@ static void handleUserInput(char ** userInputAsTokens, int* status)
 DEBUG FUNCTION
 prints all the tokens from user input
 */
-static void _test_tokens(char** tokens)
-{
-    int i = 0;
-    while(tokens[i] != NULL)
-    {
-        printf("%s\n", tokens[i++]);
-    }
-}
+// static void _test_tokens(char** tokens)
+// {
+//     int i = 0;
+//     while(tokens[i] != NULL)
+//     {
+//         printf("%s\n", tokens[i++]);
+//     }
+// }
 
 void smallsh()
 {
