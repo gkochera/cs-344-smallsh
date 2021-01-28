@@ -34,11 +34,11 @@ void cmd_other(char ** tokens, int* status)
     switch (newPid)
     {
         case -1:
-            printf("Invalid command!\n");
+            printf("Could not fork!\n");
             break;
         case 0:
             execvp(tokens[0], tokens);
-            exit(2);
+            exit(1);
             break;
         default:
             newPid = waitpid(newPid, &childStatus, 0);
