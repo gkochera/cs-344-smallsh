@@ -11,6 +11,7 @@ Description: Contains the functions for handling the core commands of 'exit', 'c
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "smallsh_sighandler.h"
 
 /*
 Helper function for cd
@@ -90,6 +91,7 @@ void cmd_other(char ** tokens, int* status)
             printf("Could not fork!\n");
             break;
         case 0:
+            attachSIGINTHandler();
             execvp(tokens[0], tokens);
             exit(1);
             break;

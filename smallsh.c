@@ -11,6 +11,7 @@ Description: Contains the core functions to display the smallsh shell and handle
 #include <string.h>
 #include <unistd.h>
 #include "smallsh_commands.h"
+#include "smallsh_sighandler.h"
 
 /*
 Gets user input up to the enter key, discards the newline character at the end
@@ -206,9 +207,11 @@ prints all the tokens from user input
 
 void smallsh()
 {
+    // Setup some necessary variables for holding user input and status
     int status = 0;
     char * input = NULL;
     char ** inputTokens = NULL;
+
     while (true)
     {
         // Print the shell prompt, gather user input, tokenize the input
