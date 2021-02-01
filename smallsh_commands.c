@@ -12,6 +12,7 @@ Description: Contains the functions for handling the core commands of 'exit', 'c
 #include <stdlib.h>
 #include <string.h>
 #include "smallsh_sighandler.h"
+#include "smallsh_structs.h"
 
 /*
 Helper function for cd
@@ -49,24 +50,64 @@ void cmd_exit()
     exit(EXIT_SUCCESS);
 }
 
-void findRedirectionInCommand(char** userInputTokens)
+/*
+Function to find and asses output and input redirection
+*/
+struct smallshFileInfo* findInputRedirectionInInput(char* userInput)
 {
-    int i = 0;
-    char * token;
-    char ** inputOutputRedirection = { NULL, NULL };
-    while ((token = userInputTokens[i]) != NULL)
+    struct smallshFileInfo* smallshFileInfo = (struct smallshFileInfo*)calloc(1, sizeof(struct smallshFileInfo));
+    char * inputRedirectionLocation = NULL;
+    char * outputRedirectionLocation = NULL;
+    int inputLength = 0;
+    int outputLength = 0;
+    smallshFileInfo->input = NULL;
+    smallshFileInfo->output = NULL;
+
+    if ((inputRedirectionLocation = strrchr(userInput, '<')) != NULL)
     {
-        if (!(strcmp(token, ">")))
-        {   
-            // Save the location in the command for the output redirection
-            inputOutputRedirection[0] = token;
-        }
-        if (!(strcmp(token, "<")))
+        if (((*(inputRedirectionLocation + 1) == ' ') && (*(inputRedirectionLocation - 1) == ' ')))
         {
-            // Save the location in the command for the input redirection
-            inputOutputRedirection[1] = token;
+            if ((outputRedirectionLocation = strrchr(inputRedirectionLocation, '>')) != NULL)
+            {
+                if (((*(outputRedirectionLocation + 1) == ' ') && (*(outputRedirectionLocation - 1) == ' ')))
+                {
+                    inputLength = outputRedirectionLocation - inputRedirectionLocation - 2;
+                }
+            }
+            else
+            {
+                inputLength = strlen(inputRedirectionLocation) - 1;
+            }
         }
     }
+    if (inputLength > 0)
+    {
+        smallshFileInfo->input = (char*)calloc(inputLength, sizeof(char));
+        strncpy(smallshFileInfo->input, inputRedirectionLocation + 2, inputLength - 1);
+    }
+    if ((outputRedirectionLocation = strrchr(userInput, '>')) != NULL)
+    {
+        if (((*(outputRedirectionLocation + 1) == ' ') && (*(outputRedirectionLocation - 1) == ' ')))
+        {
+            if ((inputRedirectionLocation = strchr(outputRedirectionLocation, '<')) != NULL)
+            {
+                if (((*(inputRedirectionLocation + 1) == ' ') && (*(inputRedirectionLocation - 1) == ' ')))
+                {
+                    outputLength = inputRedirectionLocation - outputRedirectionLocation - 2;
+                }
+            }
+            else
+            {
+                outputLength = strlen(outputRedirectionLocation) - 1;
+            }
+        }
+    }
+    if (outputLength > 0)
+    {
+        smallshFileInfo->output = (char*)calloc(outputLength, sizeof(char));
+        strncpy(smallshFileInfo->output, outputRedirectionLocation + 2, outputLength - 1);
+    }
+    return smallshFileInfo;
 }
 
 /*
@@ -95,11 +136,53 @@ void cmd_status(int* status)
     printf("exit status %d\n", *status);
 }
 
+/*
+Handle input redirection if requested (used with child process)
+*/
+void handleInputRedirection(struct smallshFileInfo* smallshFileInfo)
+{
+    if (smallshFileInfo->input != NULL)
+    {
+        FILE* inputFile = fopen(smallshFileInfo->input, "r");
+        int inputFileDescriptor = fileno(inputFile);
+        dup2(inputFileDescriptor, STDIN_FILENO);
+    }
+}
 
+/*
+Handle output redirection if requested (used with child process)
+*/
+void handleOutputRedirection(struct smallshFileInfo* smallshFileInfo)
+{
+    if (smallshFileInfo->output != NULL)
+    {
+        FILE* outputFile = fopen(smallshFileInfo->output, "a");
+        int outputFileDescriptor = fileno(outputFile);
+        dup2(outputFileDescriptor, STDOUT_FILENO);
+    }
+}
+
+/*
+Remove redirection clauses from tokens
+*/
+void cleanRedirectionFromTokens(char ** tokens)
+{
+    bool foundRedirection = false;
+    int i = 0;
+    while (tokens[i] != NULL)
+    {
+        if ((!(strcmp(tokens[i], "<"))) || (!(strcmp(tokens[i], ">")) || foundRedirection ))
+        {
+            tokens[i] = NULL;
+            foundRedirection = true;
+        } 
+        i++;
+    }
+}
 /*
 Main entry point for all other commands
 */
-void cmd_other(char ** tokens, int* status)
+void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileInfo)
 {
     pid_t newPid = -5;
     int childStatus = 0;
@@ -110,6 +193,9 @@ void cmd_other(char ** tokens, int* status)
             printf("Could not fork!\n");
             break;
         case 0:
+            handleInputRedirection(smallshFileInfo);
+            handleOutputRedirection(smallshFileInfo);
+            cleanRedirectionFromTokens(tokens);
             execvp(tokens[0], tokens);
             exit(1);
             break;

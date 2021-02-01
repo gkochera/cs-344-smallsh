@@ -12,6 +12,7 @@ Description: Contains the core functions to display the smallsh shell and handle
 #include <unistd.h>
 #include "smallsh_commands.h"
 #include "smallsh_sighandler.h"
+#include "smallsh_structs.h"
 
 /*
 Gets user input up to the enter key, discards the newline character at the end
@@ -157,7 +158,7 @@ char ** tokenizeUserInput(char* userInputAsLine)
 /*
 Handle the user input
 */
-static void handleUserInput(char ** userInputAsTokens, int* status)
+static void handleUserInput(char ** userInputAsTokens, int* status, struct smallshFileInfo* smallshFileInfo)
 {
     // Handle blank lines entered by user/script
     if (userInputAsTokens != NULL)
@@ -183,7 +184,7 @@ static void handleUserInput(char ** userInputAsTokens, int* status)
             }
             else
             {
-                cmd_other(userInputAsTokens, status);
+                cmd_other(userInputAsTokens, status, smallshFileInfo);
             }
         }
 
@@ -218,13 +219,18 @@ void smallsh()
 
     while (true)
     {
-        // Print the shell prompt, gather user input, tokenize the input
+        // Print the shell prompt, gather user input
         printf(": ");
         input = getUserInput();
+
+        // Check for redirection
+        struct smallshFileInfo* smallshFileInfo = findInputRedirectionInInput(input);
+
+        // Tokenize the user input
         inputTokens = tokenizeUserInput(input);
 
-        // now handle the tokens
-        handleUserInput(inputTokens, &status); 
+        // now handle the tokens and redirection
+        handleUserInput(inputTokens, &status, smallshFileInfo); 
         free(input);
         free(inputTokens);
     }
