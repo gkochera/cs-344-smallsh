@@ -49,6 +49,25 @@ void cmd_exit()
     exit(EXIT_SUCCESS);
 }
 
+void findRedirectionInCommand(char** userInputTokens)
+{
+    int i = 0;
+    char * token;
+    char ** inputOutputRedirection = { NULL, NULL };
+    while ((token = userInputTokens[i]) != NULL)
+    {
+        if (!(strcmp(token, ">")))
+        {   
+            // Save the location in the command for the output redirection
+            inputOutputRedirection[0] = token;
+        }
+        if (!(strcmp(token, "<")))
+        {
+            // Save the location in the command for the input redirection
+            inputOutputRedirection[1] = token;
+        }
+    }
+}
 
 /*
 Main entry point for the cd command
