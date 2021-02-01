@@ -212,8 +212,9 @@ void smallsh()
     char * input = NULL;
     char ** inputTokens = NULL;
 
-    // Capture the SIGINTs so we dont exit
+    // Capture the signals
     attachSIGINTNoExit();
+    attachSIGTSTPNoIgnore();
 
     while (true)
     {
