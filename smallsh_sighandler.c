@@ -12,18 +12,32 @@ SIGINT is CTRL + C and SIGTSTP is CTRL + Z
 #include <string.h>
 #include <unistd.h>
 
-void handleSIGINT(int signo)
+void handleSIGINTNoExit(int signo)
 {
-    char* message = "Caught SIGINT, sleeping for 3 seconds\n";
-    write(STDOUT_FILENO, message, 38);
-    sleep(3);
+
 }
 
-void attachSIGINTHandler()
+void attachSIGINTNoExit()
 {
     struct sigaction SIGINT_action = {0};
 
-    SIGINT_action.sa_handler = handleSIGINT;
+    SIGINT_action.sa_handler = handleSIGINTNoExit;
+    sigfillset(&SIGINT_action.sa_mask);
+    SIGINT_action.sa_flags = 0;
+    sigaction(SIGINT, &SIGINT_action, NULL);
+    fflush(stdout);
+}
+
+void handleSIGINTExit(int signo)
+{
+    kill(getpid(), signo);
+}
+
+void attachSIGINTExit()
+{
+    struct sigaction SIGINT_action = {0};
+
+    SIGINT_action.sa_handler = handleSIGINTExit;
     sigfillset(&SIGINT_action.sa_mask);
     SIGINT_action.sa_flags = 0;
     sigaction(SIGINT, &SIGINT_action, NULL);

@@ -212,6 +212,9 @@ void smallsh()
     char * input = NULL;
     char ** inputTokens = NULL;
 
+    // Capture the SIGINTs so we dont exit
+    attachSIGINTNoExit();
+
     while (true)
     {
         // Print the shell prompt, gather user input, tokenize the input

@@ -5,5 +5,5 @@ Filename: smallsh_sighandler.h
 Description: Contains the function prototypes for signal handling
 */
 
-void attachSIGINTHandler();
-void handleSIGINT(int signo);
+void attachSIGINTNoExit();
+void attachSIGINTExit();

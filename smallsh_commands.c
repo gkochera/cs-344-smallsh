@@ -91,7 +91,6 @@ void cmd_other(char ** tokens, int* status)
             printf("Could not fork!\n");
             break;
         case 0:
-            attachSIGINTHandler();
             execvp(tokens[0], tokens);
             exit(1);
             break;
