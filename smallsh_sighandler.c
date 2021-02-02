@@ -12,6 +12,7 @@ SIGINT is CTRL + C and SIGTSTP is CTRL + Z
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <wait.h>
 
 bool FOREGROUND_ONLY = false;
 
@@ -68,11 +69,11 @@ void handleSIGTSTPNoIgnore(int signo)
     FOREGROUND_ONLY = !(FOREGROUND_ONLY);
     if(FOREGROUND_ONLY)
     {
-        write(STDOUT_FILENO, "Entering foreground-only mode (& is now ignored)\n", 50);
+        write(STDOUT_FILENO, "\nEntering foreground-only mode (& is now ignored)\n", 51);
     }
     else
     {
-        write(STDOUT_FILENO, "Exiting foreground-only mode\n", 30);
+        write(STDOUT_FILENO, "\nExiting foreground-only mode\n", 31);
     }
     
 
@@ -87,5 +88,39 @@ void attachSIGTSTPNoIgnore()
     sigfillset(&SIGTSTP_action.sa_mask);
     SIGTSTP_action.sa_flags = 0;
     sigaction(SIGTSTP, &SIGTSTP_action, NULL);
+    fflush(stdout);
+}
+
+void handleSIGCHLD()
+{
+    pid_t pid;
+    int status;
+
+    while (1)
+    {
+        pid = wait(status)
+        if (pid == 0)
+        {
+            return;
+        }
+        else if (pid == -1)
+        {
+            return;
+        }
+        else
+        {
+            printf("Process %d ended with status: %d", pid, WSTOPSIG(status));
+        }
+    }
+}
+
+void attachSIGCHLD()
+{
+    struct sigaction SIGCHLD_action = {0};
+
+    SIGCHLD_action.sa_handler = handleSIGCHLD;
+    sigaddset(&SIGCHLD_action.sa_mask);
+    SIGCHLD_action.sa_flags = 0;
+    sigaction(SIGCHLD, &SIGCHLD_action, NULL);
     fflush(stdout);
 }

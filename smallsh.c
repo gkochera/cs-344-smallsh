@@ -214,8 +214,8 @@ void smallsh()
     char ** inputTokens = NULL;
 
     // Capture the signals
-    attachSIGINTNoExit();
-    attachSIGTSTPNoIgnore();
+    // attachSIGINTNoExit();
+    // attachSIGTSTPNoIgnore();
 
     while (true)
     {

@@ -15,6 +15,26 @@ Description: Contains the functions for handling the core commands of 'exit', 'c
 #include "smallsh_structs.h"
 
 /*
+Check a set of tokens for the & operator which is used to determine if something
+will run in the back ground
+*/
+bool runCommandInBackground(char** userInputTokens)
+{
+    int i = 0;
+    while(userInputTokens[i] != NULL)
+    {
+        if ( (!(strcmp(userInputTokens[i], "&"))) && userInputTokens[i + 1] == NULL)
+        {
+            userInputTokens[i] = NULL;
+            return true;
+        }
+        i++;
+    }
+    return false;
+}
+
+
+/*
 Helper function for cd
 Detokenizes the user input back into its original string minus the initial command
 */
@@ -42,13 +62,6 @@ char * detokenizeUserInputAfterCommand(char** userInputTokens)
     return detokenizedUserInput;
 }
 
-/*
-Main entry point for the exit command
-*/
-void cmd_exit()
-{
-    exit(EXIT_SUCCESS);
-}
 
 /*
 Function to find and asses output and input redirection
@@ -110,10 +123,66 @@ struct smallshFileInfo* findInputRedirectionInInput(char* userInput)
     return smallshFileInfo;
 }
 
+
+/*
+Handle input redirection if requested (used with child process)
+*/
+void handleInputRedirection(struct smallshFileInfo* smallshFileInfo)
+{
+    if (smallshFileInfo->input != NULL)
+    {
+        FILE* inputFile = fopen(smallshFileInfo->input, "r");
+        int inputFileDescriptor = fileno(inputFile);
+        dup2(inputFileDescriptor, STDIN_FILENO);
+    }
+}
+
+
+/*
+Handle output redirection if requested (used with child process)
+*/
+void handleOutputRedirection(struct smallshFileInfo* smallshFileInfo)
+{
+    if (smallshFileInfo->output != NULL)
+    {
+        FILE* outputFile = fopen(smallshFileInfo->output, "a");
+        int outputFileDescriptor = fileno(outputFile);
+        dup2(outputFileDescriptor, STDOUT_FILENO);
+    }
+}
+
+
+/*
+Remove redirection clauses from tokens
+*/
+void cleanRedirectionFromTokens(char ** tokens)
+{
+    bool foundRedirection = false;
+    int i = 0;
+    while (tokens[i] != NULL)
+    {
+        if ((!(strcmp(tokens[i], "<"))) || (!(strcmp(tokens[i], ">")) || foundRedirection ))
+        {
+            tokens[i] = NULL;
+            foundRedirection = true;
+        } 
+        i++;
+    }
+}
+
+
+/*
+Main entry point for the exit command
+*/
+void cmd_exit()
+{
+    exit(EXIT_SUCCESS);
+}
+
+
 /*
 Main entry point for the cd command
 */
-//TODO: Need to handle paths with spaces
 void cmd_cd(char ** userInputAsTokens)
 {
     char * path = detokenizeUserInputAfterCommand(userInputAsTokens);
@@ -136,49 +205,7 @@ void cmd_status(int* status)
     printf("exit status %d\n", *status);
 }
 
-/*
-Handle input redirection if requested (used with child process)
-*/
-void handleInputRedirection(struct smallshFileInfo* smallshFileInfo)
-{
-    if (smallshFileInfo->input != NULL)
-    {
-        FILE* inputFile = fopen(smallshFileInfo->input, "r");
-        int inputFileDescriptor = fileno(inputFile);
-        dup2(inputFileDescriptor, STDIN_FILENO);
-    }
-}
 
-/*
-Handle output redirection if requested (used with child process)
-*/
-void handleOutputRedirection(struct smallshFileInfo* smallshFileInfo)
-{
-    if (smallshFileInfo->output != NULL)
-    {
-        FILE* outputFile = fopen(smallshFileInfo->output, "a");
-        int outputFileDescriptor = fileno(outputFile);
-        dup2(outputFileDescriptor, STDOUT_FILENO);
-    }
-}
-
-/*
-Remove redirection clauses from tokens
-*/
-void cleanRedirectionFromTokens(char ** tokens)
-{
-    bool foundRedirection = false;
-    int i = 0;
-    while (tokens[i] != NULL)
-    {
-        if ((!(strcmp(tokens[i], "<"))) || (!(strcmp(tokens[i], ">")) || foundRedirection ))
-        {
-            tokens[i] = NULL;
-            foundRedirection = true;
-        } 
-        i++;
-    }
-}
 /*
 Main entry point for all other commands
 */
@@ -186,7 +213,9 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
 {
     pid_t newPid = -5;
     int childStatus = 0;
+    signal(SIGCHLD, handleSIGCHLD);
     newPid = fork();
+    bool runInBackground = runCommandInBackground(tokens);
     switch (newPid)
     {
         case -1:
@@ -200,12 +229,29 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
             exit(1);
             break;
         default:
-            newPid = waitpid(newPid, &childStatus, 0);
-            while (!WIFEXITED(childStatus) && !WIFSIGNALED(childStatus))
+            if (!runInBackground)
             {
+                newPid = waitpid(newPid, &childStatus, 0);
+                while (!WIFEXITED(childStatus) && !WIFSIGNALED(childStatus))
+                {
 
+                }
+                *status = WEXITSTATUS(childStatus);
+                break;
             }
-            *status = WEXITSTATUS(childStatus);
-            break;
+            else
+            {
+                printf("Background PID is %d\n", newPid);
+                
+                while (!waitpid(newPid, &childStatus, WNOHANG))
+                {
+
+                }
+                *status = WEXITSTATUS(childStatus);
+                int signal = WSTOPSIG(childStatus);
+                printf("Background PID %d is done: terminated by signal %d\n", newPid, signal);
+                break;
+            }
+            
     }
 }
