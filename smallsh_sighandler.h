@@ -15,3 +15,4 @@ void attachSIGCHLD();
 // Used an external variable to keep track of the status of CTRL + Z.
 #include <stdbool.h>
 extern bool FOREGROUND_ONLY;
+extern char * SIGNAL_MESSAGE;

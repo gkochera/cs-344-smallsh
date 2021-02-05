@@ -7,6 +7,8 @@ Description: Contains the functions for handling the core commands of 'exit', 'c
 
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +35,18 @@ bool runCommandInBackground(char** userInputTokens)
     return false;
 }
 
+/*
+Print the background process status when a message appears, then clear it.
+*/
+void displayTerminatedBackgroundProcess()
+{
+    if (SIGNAL_MESSAGE != NULL)
+    {
+        printf("%s", SIGNAL_MESSAGE);
+        free(SIGNAL_MESSAGE);
+        SIGNAL_MESSAGE = NULL;
+    }
+}
 
 /*
 Helper function for cd
@@ -126,38 +140,64 @@ struct smallshFileInfo* findInputRedirectionInInput(char* userInput)
 
 /*
 Handle input redirection if requested (used with child process)
+Returns 0 on success, -1 on error.
 */
-void handleInputRedirection(struct smallshFileInfo* smallshFileInfo)
+int handleInputRedirection(struct smallshFileInfo* smallshFileInfo)
 {
     FILE* inputFile;
+    int inputFileDescriptor;
     if (smallshFileInfo->input != NULL)
     {
-        if((inputFile = fopen(smallshFileInfo->input, "r")) != NULL)
+        if(!strcmp(smallshFileInfo->input, "/dev/null"))
         {
-            int inputFileDescriptor = fileno(inputFile);
+            inputFileDescriptor = open("/dev/null", O_RDWR);
             dup2(inputFileDescriptor, STDIN_FILENO);
         }
         else
         {
-            printf("\n%s: no such file or directory\n", smallshFileInfo->input);
+            if((inputFile = fopen(smallshFileInfo->input, "r")) != NULL)
+            {
+                int inputFileDescriptor = fileno(inputFile);
+                dup2(inputFileDescriptor, STDIN_FILENO);
+                return 0;
+            }
+            else
+            {
+                printf("%s: no such file or directory\n", smallshFileInfo->input);
+                return -1;
+            }
         }
         
-
     }
+    return 0;
 }
 
 
 /*
 Handle output redirection if requested (used with child process)
 */
-void handleOutputRedirection(struct smallshFileInfo* smallshFileInfo)
+int handleOutputRedirection(struct smallshFileInfo* smallshFileInfo)
 {
+    FILE* outputFile;
+    int outputFileDescriptor;
     if (smallshFileInfo->output != NULL)
     {
-        FILE* outputFile = fopen(smallshFileInfo->output, "a");
-        int outputFileDescriptor = fileno(outputFile);
-        dup2(outputFileDescriptor, STDOUT_FILENO);
+        if(!strcmp(smallshFileInfo->output, "/dev/null"))
+        {
+            outputFileDescriptor = open("/dev/null", O_RDWR);
+            dup2(outputFileDescriptor, STDOUT_FILENO);
+            return 0;
+        }
+        else
+        {
+            outputFile = fopen(smallshFileInfo->output, "a");
+            int outputFileDescriptor = fileno(outputFile);
+            dup2(outputFileDescriptor, STDOUT_FILENO);
+            return 0;
+        }
+        
     }
+    return 0;
 }
 
 
@@ -216,6 +256,27 @@ void cmd_status(int* status)
 
 
 /*
+For background processes, see if there is redirection, if not, set redirection to '/dev/null'.
+*/
+void setBackgroundProcessRedirection(struct smallshFileInfo* smallshFileInfo, bool runInBackground)
+{
+    if (runInBackground)
+    {
+        if (smallshFileInfo->input == NULL)
+        {
+            smallshFileInfo->input = (char*)calloc(strlen("/dev/null") + 1, sizeof(char));
+            strcpy(smallshFileInfo->input, "/dev/null");
+        }
+        
+        if (smallshFileInfo->output == NULL)
+        {
+            smallshFileInfo->output = (char*)calloc(strlen("/dev/null") + 1, sizeof(char));
+            strcpy(smallshFileInfo->output, "/dev/null");
+        }
+    }
+}
+
+/*
 Main entry point for all other commands
 */
 void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileInfo)
@@ -223,10 +284,6 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
     pid_t newPid = -5;
     int childStatus = 0;
     bool runInBackground = runCommandInBackground(tokens);
-    if (runInBackground && !FOREGROUND_ONLY)
-    {
-        attachSIGCHLD();
-    }
     newPid = fork();
     
     switch (newPid)
@@ -235,14 +292,17 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
             printf("Could not fork!\n");
             break;
         case 0:
-            handleInputRedirection(smallshFileInfo);
-            handleOutputRedirection(smallshFileInfo);
-            cleanRedirectionFromTokens(tokens);
-            if(execvp(tokens[0], tokens))
+            setBackgroundProcessRedirection(smallshFileInfo, runInBackground);
+            if (!handleInputRedirection(smallshFileInfo))
             {
-                printf("%s: no such file or directory\n", tokens[0]);
-                exit(1);
-            };
+                handleOutputRedirection(smallshFileInfo);
+                cleanRedirectionFromTokens(tokens);
+                if(execvp(tokens[0], tokens) == -1)
+                {
+                    printf("%s: no such file or directory\n", tokens[0]);
+                    exit(1);
+                };
+            }
             break;
         default:
             if (!runInBackground || FOREGROUND_ONLY)

@@ -197,14 +197,18 @@ static void handleUserInput(char ** userInputAsTokens, int* status, struct small
 DEBUG FUNCTION
 prints all the tokens from user input
 */
-// static void _test_tokens(char** tokens)
-// {
-//     int i = 0;
-//     while(tokens[i] != NULL)
-//     {
-//         printf("%s\n", tokens[i++]);
-//     }
-// }
+static void _test_tokens(char** tokens)
+{
+    if (tokens != NULL)
+    {
+        int i = 0;
+        while(tokens[i] != NULL)
+        {
+            printf("%d: \'%s\'\n", i, tokens[i]);
+            i++;
+        }
+    }
+}
 
 void smallsh()
 {
@@ -214,11 +218,15 @@ void smallsh()
     char ** inputTokens = NULL;
 
     // Capture the signals
-    attachSIGINTNoExit();
-    attachSIGTSTPNoIgnore();
+    // attachSIGINTNoExit();
+    // attachSIGTSTPNoIgnore();
+    attachSIGCHLD();
 
     while (true)
     {
+        // Display any terminated children and their status
+        displayTerminatedBackgroundProcess(SIGNAL_MESSAGE);
+        
         // Print the shell prompt, gather user input
         printf(": ");
         input = getUserInput();
@@ -228,6 +236,7 @@ void smallsh()
 
         // Tokenize the user input
         inputTokens = tokenizeUserInput(input);
+        _test_tokens(inputTokens);
 
         // now handle the tokens and redirection
         handleUserInput(inputTokens, &status, smallshFileInfo); 

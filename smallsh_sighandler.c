@@ -15,6 +15,7 @@ SIGINT is CTRL + C and SIGTSTP is CTRL + Z
 #include <wait.h>
 
 bool FOREGROUND_ONLY = false;
+char * SIGNAL_MESSAGE = NULL;
 
 void handleSIGINTNoExit(int signo)
 {
@@ -35,6 +36,9 @@ void attachSIGINTNoExit()
 void handleSIGINTExit(int signo)
 {
     kill(getpid(), signo);
+    write(STDOUT_FILENO, "terminated by signal ", 21);
+    write(STDOUT_FILENO, &signo, sizeof(signo));
+    write(STDOUT_FILENO, "\n", 1);
 }
 
 void attachSIGINTExit()
@@ -69,11 +73,11 @@ void handleSIGTSTPNoIgnore(int signo)
     FOREGROUND_ONLY = !(FOREGROUND_ONLY);
     if(FOREGROUND_ONLY)
     {
-        write(STDOUT_FILENO, "\nEntering foreground-only mode (& is now ignored)\n", 51);
+        write(STDOUT_FILENO, "\nEntering foreground-only mode (& is now ignored)\n", 50);
     }
     else
     {
-        write(STDOUT_FILENO, "\nExiting foreground-only mode\n", 31);
+        write(STDOUT_FILENO, "\nExiting foreground-only mode\n", 30);
     }
     
 
@@ -91,33 +95,27 @@ void attachSIGTSTPNoIgnore()
     fflush(stdout);
 }
 
+/*
+SOURCE: https://docs.oracle.com/cd/E19455-01/806-4750/signals-7/index.html
+*/
 void handleSIGCHLD(int signo)
 {
     pid_t pid;
     int status;
-
-    while (1)
+    while((pid = waitpid(-1, &status, WNOHANG)) > 0)
     {
-        pid = wait(&status);
-        if (pid == 0)
+        if (pid > 0)
         {
-            return;
-        }
-        else if (pid == -1)
-        {
-            return;
-        }
-        else
-        {
-            printf("Process %d ended with status: %d", pid, WSTOPSIG(status));
+            SIGNAL_MESSAGE = (char*)calloc(50, sizeof(char));
+            sprintf(SIGNAL_MESSAGE, "Process %d ended with status: %d\n", pid, WSTOPSIG(status));
         }
     }
+
 }
 
 void attachSIGCHLD()
 {
     struct sigaction SIGCHLD_action = {0};
-
     SIGCHLD_action.sa_handler = handleSIGCHLD;
     sigfillset(&SIGCHLD_action.sa_mask);
     SIGCHLD_action.sa_flags = 0;

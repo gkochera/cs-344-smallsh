@@ -11,3 +11,4 @@ void cmd_cd();
 void cmd_status(int* status);
 void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileInfo);
 struct smallshFileInfo* findInputRedirectionInInput(char* userInput);
+void displayTerminatedBackgroundProcess(char * signalMessage);
