@@ -223,7 +223,7 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
     pid_t newPid = -5;
     int childStatus = 0;
     bool runInBackground = runCommandInBackground(tokens);
-    if (runInBackground)
+    if (runInBackground && !FOREGROUND_ONLY)
     {
         attachSIGCHLD();
     }
@@ -238,11 +238,14 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
             handleInputRedirection(smallshFileInfo);
             handleOutputRedirection(smallshFileInfo);
             cleanRedirectionFromTokens(tokens);
-            execvp(tokens[0], tokens);
-            exit(1);
+            if(execvp(tokens[0], tokens))
+            {
+                printf("%s: no such file or directory\n", tokens[0]);
+                exit(1);
+            };
             break;
         default:
-            if (!runInBackground)
+            if (!runInBackground || FOREGROUND_ONLY)
             {
                 newPid = waitpid(newPid, &childStatus, 0);
                 while (!WIFEXITED(childStatus) && !WIFSIGNALED(childStatus))
