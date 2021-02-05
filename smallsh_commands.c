@@ -129,11 +129,20 @@ Handle input redirection if requested (used with child process)
 */
 void handleInputRedirection(struct smallshFileInfo* smallshFileInfo)
 {
+    FILE* inputFile;
     if (smallshFileInfo->input != NULL)
     {
-        FILE* inputFile = fopen(smallshFileInfo->input, "r");
-        int inputFileDescriptor = fileno(inputFile);
-        dup2(inputFileDescriptor, STDIN_FILENO);
+        if((inputFile = fopen(smallshFileInfo->input, "r")) != NULL)
+        {
+            int inputFileDescriptor = fileno(inputFile);
+            dup2(inputFileDescriptor, STDIN_FILENO);
+        }
+        else
+        {
+            printf("\n%s: no such file or directory\n", smallshFileInfo->input);
+        }
+        
+
     }
 }
 
@@ -213,9 +222,13 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
 {
     pid_t newPid = -5;
     int childStatus = 0;
-    signal(SIGCHLD, handleSIGCHLD);
-    newPid = fork();
     bool runInBackground = runCommandInBackground(tokens);
+    if (runInBackground)
+    {
+        attachSIGCHLD();
+    }
+    newPid = fork();
+    
     switch (newPid)
     {
         case -1:
@@ -242,14 +255,6 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
             else
             {
                 printf("Background PID is %d\n", newPid);
-                
-                while (!waitpid(newPid, &childStatus, WNOHANG))
-                {
-
-                }
-                *status = WEXITSTATUS(childStatus);
-                int signal = WSTOPSIG(childStatus);
-                printf("Background PID %d is done: terminated by signal %d\n", newPid, signal);
                 break;
             }
             

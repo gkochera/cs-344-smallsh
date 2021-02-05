@@ -91,14 +91,14 @@ void attachSIGTSTPNoIgnore()
     fflush(stdout);
 }
 
-void handleSIGCHLD()
+void handleSIGCHLD(int signo)
 {
     pid_t pid;
     int status;
 
     while (1)
     {
-        pid = wait(status)
+        pid = wait(&status);
         if (pid == 0)
         {
             return;
@@ -119,7 +119,7 @@ void attachSIGCHLD()
     struct sigaction SIGCHLD_action = {0};
 
     SIGCHLD_action.sa_handler = handleSIGCHLD;
-    sigaddset(&SIGCHLD_action.sa_mask);
+    sigfillset(&SIGCHLD_action.sa_mask);
     SIGCHLD_action.sa_flags = 0;
     sigaction(SIGCHLD, &SIGCHLD_action, NULL);
     fflush(stdout);

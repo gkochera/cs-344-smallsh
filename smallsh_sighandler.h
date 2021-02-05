@@ -9,6 +9,7 @@ void attachSIGINTNoExit();
 void attachSIGINTExit();
 void attachSIGTSTPNoIgnore();
 void attachSIGTSTPIgnore();
+void attachSIGCHLD();
 
 // SOURCE: http://sgeos.github.io/unix/c/signals/2016/02/24/passing-values-to-c-signal-handlers.html
 // Used an external variable to keep track of the status of CTRL + Z.
