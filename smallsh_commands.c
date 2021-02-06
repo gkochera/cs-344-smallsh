@@ -15,6 +15,7 @@ Description: Contains the functions for handling the core commands of 'exit', 'c
 #include <string.h>
 #include "smallsh_sighandler.h"
 #include "smallsh_structs.h"
+#include "smallsh_childpids.h"
 
 /*
 Check a set of tokens for the & operator which is used to determine if something

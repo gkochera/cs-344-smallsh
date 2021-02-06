@@ -13,6 +13,7 @@ Description: Contains the core functions to display the smallsh shell and handle
 #include "smallsh_commands.h"
 #include "smallsh_sighandler.h"
 #include "smallsh_structs.h"
+#include "smallsh_childpids.h"
 
 /*
 Gets user input up to the enter key, discards the newline character at the end
@@ -187,25 +188,9 @@ static void handleUserInput(char ** userInputAsTokens, int* status, struct small
 
 }
 
-
 /*
-DEBUG FUNCTION
-prints all the tokens from user input
+Main prompt loop
 */
-// static void _test_tokens(char** tokens)
-// {
-//     if (tokens != NULL)
-//     {
-//         int i = 0;
-//         while(tokens[i] != NULL)
-//         {
-//             printf("%d: \'%s\'\n", i, tokens[i]);
-//             i++;
-//         }
-//     }
-// }
-
-
 void smallsh()
 {
     // Setup some necessary variables for holding user input and status
