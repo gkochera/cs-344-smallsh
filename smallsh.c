@@ -202,9 +202,8 @@ void smallsh()
     struct childPids* childPids = initializeChildPids();
 
     // Capture the signals
-    attachSIGINTNoExit();
-    attachSIGTSTPNoIgnore();
-
+    attachSIGINT(NOEXIT);
+    attachSIGTSTP(NOIGNORE);
 
     while (true)
     {

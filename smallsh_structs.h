@@ -16,6 +16,9 @@ struct smallshFileInfo {
 };
 #endif
 
+/*
+Struct that holds the pid list for the children and the length of the overall array
+*/
 #ifndef CHILDPIDS
 #define CHILDPIDS
 struct childPids {

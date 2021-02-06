@@ -296,13 +296,13 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
             setBackgroundProcessRedirection(smallshFileInfo, runInBackground);
             if (runInBackground)
             {
-                attachSIGINTNoExit();
-                attachSIGTSTPIgnore();
+                attachSIGINT(NOEXIT);
+                attachSIGTSTP(IGNORE);
             }
             else
             {
-                attachSIGINTExit();
-                attachSIGTSTPIgnore();
+                attachSIGINT(EXIT);
+                attachSIGTSTP(IGNORE);
             }
             if (!handleInputRedirection(smallshFileInfo))
             {
