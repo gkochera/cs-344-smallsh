@@ -18,7 +18,9 @@ bool FOREGROUND_ONLY = false;
 
 void handleSIGINTNoExit(int signo)
 {
-
+    char * newline = "\n";
+    write(STDOUT_FILENO, newline, strlen(newline));
+    fflush(stdout);
 }
 
 void attachSIGINTNoExit()
@@ -34,7 +36,7 @@ void attachSIGINTNoExit()
 
 void handleSIGINTExit(int signo)
 {
-    kill(getpid(), signo);
+    killpg(getpgrp(), signo);
     write(STDOUT_FILENO, "terminated by signal ", 21);
     write(STDOUT_FILENO, &signo, sizeof(signo));
     write(STDOUT_FILENO, "\n", 1);
@@ -54,7 +56,7 @@ void attachSIGINTExit()
 
 void handleSIGTSTPIgnore(int signo)
 {
-    return;
+
 }
 
 void attachSIGTSTPIgnore()

@@ -19,20 +19,15 @@ Gets user input up to the enter key, discards the newline character at the end
 */
 static char * getUserInput()
 {
-    char inputChar;
-    int inputBufferSize = 4;
-    int inputIndex = 0;
-    char * input = (char*)calloc(inputBufferSize, sizeof(char));
-    while((inputChar = fgetc(stdin)) != '\n')
+    char * input = (char*)calloc(301, sizeof(char));
+    fgets(input, 300, stdin);
+    for (int i = 0; i < 301; i++)
     {
-        input[inputIndex++] = inputChar;
-        if (inputIndex - 1 >= inputBufferSize)
+        if (input[i] == '\n')
         {
-            inputBufferSize *= 2;
-            input = (char*)realloc(input, inputBufferSize * sizeof(char));
+            input[i] = '\0';
         }
     }
-    input[inputIndex] = '\0';
     return input;
 }
 
@@ -170,7 +165,7 @@ static void handleUserInput(char ** userInputAsTokens, int* status, struct small
             char * command = userInputAsTokens[0];
             if (!(strcmp(command, "exit")))
             {
-                cmd_exit();
+                cmd_exit(childPids);
                 *status = -1;
             }
             else if (!(strcmp(command, "status")))

@@ -212,8 +212,17 @@ void cleanRedirectionFromTokens(char ** tokens)
 /*
 Main entry point for the exit command
 */
-void cmd_exit()
+void cmd_exit(struct childPids* childPids)
 {
+    int i = 0;
+    while (i < childPids->lengthOfPids)
+    {
+        if (childPids->pids[i] > 0)
+        {
+            kill(childPids->pids[i], SIGKILL);
+        }
+        i++;
+    }
     exit(EXIT_SUCCESS);
 }
 
@@ -242,8 +251,12 @@ Main entry point for the status command
 void cmd_status(int* status)
 {
     printf("exit status %d\n", *status);
+    fflush(stdout);
 }
 
+/*
+Sets up the child pid list for keeping track of child processes
+*/
 struct childPids* initializeChildPids()
 {
     struct childPids* childPids = (struct childPids*)calloc(1, sizeof(struct childPids));
@@ -376,7 +389,7 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
             else
             {
                 attachSIGINTExit();
-                attachSIGINTNoExit();
+                attachSIGTSTPIgnore();
             }
             if (!handleInputRedirection(smallshFileInfo))
             {
@@ -388,6 +401,12 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
                     fflush(stdout);
                     exit(1);
                 };
+            }
+            else
+            {
+                // Handle the case where someone tries to redirect a file, that cannot be accessed
+                // or doesn't exist as input to a program.
+                exit(1);
             }
             break;
         default:
