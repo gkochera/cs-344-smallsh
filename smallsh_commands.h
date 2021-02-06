@@ -9,6 +9,8 @@ Description: Contains the function prototypes for handling the core commands of
 void cmd_exit();
 void cmd_cd();
 void cmd_status(int* status);
-void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileInfo);
+void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileInfo, struct childPids* childPids);
 struct smallshFileInfo* findInputRedirectionInInput(char* userInput);
 void displayTerminatedBackgroundProcess(char * signalMessage);
+struct childPids* initializeChildPids();
+void pollChildPids(struct childPids* childPids);

@@ -15,3 +15,11 @@ struct smallshFileInfo {
     char* output;
 };
 #endif
+
+#ifndef CHILDPIDS
+#define CHILDPIDS
+struct childPids {
+    int * pids;
+    int lengthOfPids;
+};
+#endif

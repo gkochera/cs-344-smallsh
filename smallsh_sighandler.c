@@ -15,7 +15,6 @@ SIGINT is CTRL + C and SIGTSTP is CTRL + Z
 #include <wait.h>
 
 bool FOREGROUND_ONLY = false;
-char * SIGNAL_MESSAGE = NULL;
 
 void handleSIGINTNoExit(int signo)
 {
@@ -39,6 +38,7 @@ void handleSIGINTExit(int signo)
     write(STDOUT_FILENO, "terminated by signal ", 21);
     write(STDOUT_FILENO, &signo, sizeof(signo));
     write(STDOUT_FILENO, "\n", 1);
+    fflush(stdout);
 }
 
 void attachSIGINTExit()
@@ -54,15 +54,15 @@ void attachSIGINTExit()
 
 void handleSIGTSTPIgnore(int signo)
 {
-
+    return;
 }
 
 void attachSIGTSTPIgnore()
 {
     struct sigaction SIGTSTP_action = {0};
-
+    sigemptyset(&SIGTSTP_action.sa_mask);
+    sigaddset(&SIGTSTP_action.sa_mask, SIGTSTP);
     SIGTSTP_action.sa_handler = handleSIGTSTPIgnore;
-    sigfillset(&SIGTSTP_action.sa_mask);
     SIGTSTP_action.sa_flags = 0;
     sigaction(SIGTSTP, &SIGTSTP_action, NULL);
     fflush(stdout);
@@ -73,11 +73,15 @@ void handleSIGTSTPNoIgnore(int signo)
     FOREGROUND_ONLY = !(FOREGROUND_ONLY);
     if(FOREGROUND_ONLY)
     {
-        write(STDOUT_FILENO, "\nEntering foreground-only mode (& is now ignored)\n", 50);
+        char * message = "\nEntering foreground-only mode (& is now ignored)\n";
+        write(STDOUT_FILENO, message, strlen(message));
+        fflush(stdout);
     }
     else
     {
-        write(STDOUT_FILENO, "\nExiting foreground-only mode\n", 30);
+        char * message = "\nExiting foreground-only mode\n";
+        write(STDOUT_FILENO, message, strlen(message));
+        fflush(stdout);
     }
     
 
@@ -95,30 +99,5 @@ void attachSIGTSTPNoIgnore()
     fflush(stdout);
 }
 
-/*
-SOURCE: https://docs.oracle.com/cd/E19455-01/806-4750/signals-7/index.html
-*/
-void handleSIGCHLD(int signo)
-{
-    pid_t pid;
-    int status;
-    while((pid = waitpid(-1, &status, WNOHANG)) > 0)
-    {
-        if (pid > 0)
-        {
-            SIGNAL_MESSAGE = (char*)calloc(50, sizeof(char));
-            sprintf(SIGNAL_MESSAGE, "Process %d ended with status: %d\n", pid, WSTOPSIG(status));
-        }
-    }
 
-}
 
-void attachSIGCHLD()
-{
-    struct sigaction SIGCHLD_action = {0};
-    SIGCHLD_action.sa_handler = handleSIGCHLD;
-    sigfillset(&SIGCHLD_action.sa_mask);
-    SIGCHLD_action.sa_flags = 0;
-    sigaction(SIGCHLD, &SIGCHLD_action, NULL);
-    fflush(stdout);
-}

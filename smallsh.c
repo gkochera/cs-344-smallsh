@@ -158,7 +158,7 @@ char ** tokenizeUserInput(char* userInputAsLine)
 /*
 Handle the user input
 */
-static void handleUserInput(char ** userInputAsTokens, int* status, struct smallshFileInfo* smallshFileInfo)
+static void handleUserInput(char ** userInputAsTokens, int* status, struct smallshFileInfo* smallshFileInfo, struct childPids* childPids)
 {
     // Handle blank lines entered by user/script
     if (userInputAsTokens != NULL)
@@ -184,7 +184,7 @@ static void handleUserInput(char ** userInputAsTokens, int* status, struct small
             }
             else
             {
-                cmd_other(userInputAsTokens, status, smallshFileInfo);
+                cmd_other(userInputAsTokens, status, smallshFileInfo, childPids);
             }
         }
 
@@ -197,18 +197,19 @@ static void handleUserInput(char ** userInputAsTokens, int* status, struct small
 DEBUG FUNCTION
 prints all the tokens from user input
 */
-static void _test_tokens(char** tokens)
-{
-    if (tokens != NULL)
-    {
-        int i = 0;
-        while(tokens[i] != NULL)
-        {
-            printf("%d: \'%s\'\n", i, tokens[i]);
-            i++;
-        }
-    }
-}
+// static void _test_tokens(char** tokens)
+// {
+//     if (tokens != NULL)
+//     {
+//         int i = 0;
+//         while(tokens[i] != NULL)
+//         {
+//             printf("%d: \'%s\'\n", i, tokens[i]);
+//             i++;
+//         }
+//     }
+// }
+
 
 void smallsh()
 {
@@ -217,29 +218,32 @@ void smallsh()
     char * input = NULL;
     char ** inputTokens = NULL;
 
+    // Take care of keeping track of child pids using this struct
+    struct childPids* childPids = initializeChildPids();
+
     // Capture the signals
-    // attachSIGINTNoExit();
-    // attachSIGTSTPNoIgnore();
-    attachSIGCHLD();
+    attachSIGINTNoExit();
+    attachSIGTSTPNoIgnore();
+
 
     while (true)
     {
-        // Display any terminated children and their status
-        displayTerminatedBackgroundProcess(SIGNAL_MESSAGE);
-        
+        // Check child PIDs status
+        pollChildPids(childPids);
+
         // Print the shell prompt, gather user input
         printf(": ");
+        fflush(stdout);
         input = getUserInput();
-
+        
         // Check for redirection
         struct smallshFileInfo* smallshFileInfo = findInputRedirectionInInput(input);
 
         // Tokenize the user input
         inputTokens = tokenizeUserInput(input);
-        _test_tokens(inputTokens);
 
         // now handle the tokens and redirection
-        handleUserInput(inputTokens, &status, smallshFileInfo); 
+        handleUserInput(inputTokens, &status, smallshFileInfo, childPids); 
         free(input);
         free(inputTokens);
     }

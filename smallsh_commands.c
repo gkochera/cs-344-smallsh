@@ -35,18 +35,6 @@ bool runCommandInBackground(char** userInputTokens)
     return false;
 }
 
-/*
-Print the background process status when a message appears, then clear it.
-*/
-void displayTerminatedBackgroundProcess()
-{
-    if (SIGNAL_MESSAGE != NULL)
-    {
-        printf("%s", SIGNAL_MESSAGE);
-        free(SIGNAL_MESSAGE);
-        SIGNAL_MESSAGE = NULL;
-    }
-}
 
 /*
 Helper function for cd
@@ -164,6 +152,7 @@ int handleInputRedirection(struct smallshFileInfo* smallshFileInfo)
             else
             {
                 printf("%s: no such file or directory\n", smallshFileInfo->input);
+                fflush(stdout);
                 return -1;
             }
         }
@@ -242,6 +231,7 @@ void cmd_cd(char ** userInputAsTokens)
     else if(chdir(path))
     {
         printf("Directory does not exist.\n");
+        fflush(stdout);
     }
 }
 
@@ -252,6 +242,90 @@ Main entry point for the status command
 void cmd_status(int* status)
 {
     printf("exit status %d\n", *status);
+}
+
+struct childPids* initializeChildPids()
+{
+    struct childPids* childPids = (struct childPids*)calloc(1, sizeof(struct childPids));
+    childPids->lengthOfPids = 2;
+    childPids->pids = (int*)calloc(childPids->lengthOfPids, sizeof(int));
+    return childPids;
+}
+
+/*
+Adds a PID to the child pid array and resizes it if necessary.
+*/
+void addChildPid(int pid, struct childPids* childPids)
+{
+    int i = 0;
+    bool recordedPid = false;
+    while (i < childPids->lengthOfPids && !recordedPid)
+    {
+        if (childPids->pids[i] == 0)
+        {
+            childPids->pids[i] = pid;
+            recordedPid = true;
+        }
+        else
+        {
+            i++;
+            if (i >= childPids->lengthOfPids)
+            {
+                childPids->lengthOfPids *= 2;
+                childPids->pids = (int*)realloc(childPids->pids, childPids->lengthOfPids);
+            }
+        }
+        
+    }
+}
+
+/*
+Removes a child PID from the array
+*/
+void removeChildPid(int pid, struct childPids* childPids)
+{
+    int i = 0;
+    while (i < childPids->lengthOfPids)
+    {
+        if (childPids->pids[i] == pid)
+        {
+            childPids->pids[i] = 0;
+        }
+        i++;
+    }
+}
+
+/*
+Scans all the child PIDs in the given array and outputs a message if they are terminated
+*/
+void pollChildPids(struct childPids* childPids)
+{
+    int i = 0;
+    int childStatus = 0;
+    while (i < childPids->lengthOfPids)
+    {
+        if (childPids->pids[i] > 0)
+        {
+            while(waitpid(childPids->pids[i], &childStatus, WNOHANG) > 0)
+            {
+                if (WIFEXITED(childStatus) || WIFSIGNALED(childStatus))
+                {
+                    if (WIFEXITED(childStatus))
+                    {
+                        printf("background pid %d is done: exit value %d\n", childPids->pids[i], WEXITSTATUS(childStatus));
+                        fflush(stdout);
+                    }
+                    if (WIFSIGNALED(childStatus))
+                    {
+                        printf("background pid %d is done: terminated by signal %d\n", childPids->pids[i], WTERMSIG(childStatus));
+                        fflush(stdout);
+                    }
+                    removeChildPid(childPids->pids[i], childPids);
+                }
+            }
+        }
+        i++;
+    }
 }
 
 
@@ -279,7 +353,7 @@ void setBackgroundProcessRedirection(struct smallshFileInfo* smallshFileInfo, bo
 /*
 Main entry point for all other commands
 */
-void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileInfo)
+void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileInfo, struct childPids* childPids)
 {
     pid_t newPid = -5;
     int childStatus = 0;
@@ -290,9 +364,20 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
     {
         case -1:
             printf("Could not fork!\n");
+            fflush(stdout);
             break;
         case 0:
             setBackgroundProcessRedirection(smallshFileInfo, runInBackground);
+            if (runInBackground)
+            {
+                attachSIGINTNoExit();
+                attachSIGTSTPIgnore();
+            }
+            else
+            {
+                attachSIGINTExit();
+                attachSIGINTNoExit();
+            }
             if (!handleInputRedirection(smallshFileInfo))
             {
                 handleOutputRedirection(smallshFileInfo);
@@ -300,6 +385,7 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
                 if(execvp(tokens[0], tokens) == -1)
                 {
                     printf("%s: no such file or directory\n", tokens[0]);
+                    fflush(stdout);
                     exit(1);
                 };
             }
@@ -318,6 +404,8 @@ void cmd_other(char ** tokens, int* status, struct smallshFileInfo* smallshFileI
             else
             {
                 printf("Background PID is %d\n", newPid);
+                fflush(stdout);
+                addChildPid(newPid, childPids);
                 break;
             }
             
