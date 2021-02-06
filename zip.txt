@@ -1,0 +1,12 @@
+main.c
+makefile
+smallsh_childpids.c
+smallsh_childpids.h
+smallsh_commands.c
+smallsh_commands.h
+smallsh_sighandler.c
+smallsh_sighandler.h
+smallsh_structs.h
+smallsh.c
+smallsh.h
+README.txt
