@@ -55,12 +55,6 @@ void attachSIGINT(int handlerOption)
         SIGINT_action.sa_handler = SIG_IGN;
     }
 
-    // In the event we want to kill the process, we will use our custom handleSIGINTExit handler
-    else if (handlerOption == EXIT)
-    {
-        SIGINT_action.sa_handler = handleSIGINTExit;
-    }
-
     // We want to block all catchable signals while our handler is running
     sigfillset(&SIGINT_action.sa_mask);
 
