@@ -7,6 +7,8 @@
 
 This program is an interactive shell. It's a simple shell with only 3 commands. cd allows you to change the directory, exit allows you to exit the program and status will display the last status of the last executed command. The shell will also allow the user to run other commands that are available on the system. It does this by forking off a child process and then executing that process in the child.
 
+Program has been run by itself and with the p3testscript on both OS1 and my local machine. Confirmed working and passing on both.
+
 # Program Operation
 
 The command prompt is displayed as a simple ': ' followed by a blinking cursor. Simply enter the command you wish to run at the prompt and press enter to execute. The command prompt will display a new prompt when the command is done executing in the foreground. The command prompt will display immediately after execution of a background process.
