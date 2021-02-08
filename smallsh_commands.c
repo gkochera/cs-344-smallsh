@@ -437,6 +437,7 @@ void cmd_other(char ** tokens, char* status, struct smallshFileInfo* smallshFile
             // Children running in the foreground should not ignore SIGINT, but should ignore SIGTSTP
             else
             {
+                attachSIGINT(EXIT);
                 attachSIGTSTP(IGNORE);
             }
 
