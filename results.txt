@@ -1,0 +1,132 @@
+PRE-SCRIPT INFO
+  Grading Script PID: 1143
+  Note: your smallsh will report a different PID when evaluating $$
+: BEGINNING TEST SCRIPT
+: 
+: --------------------
+: Using comment (5 points if only next prompt is displayed next)
+: : 
+: 
+: --------------------
+: ls (10 points for returning dir contents)
+: README.txt
+build
+main.c
+makefile
+p3testscript
+results.txt
+smallsh
+smallsh.c
+smallsh.h
+smallsh_childpids.c
+smallsh_childpids.h
+smallsh_commands.c
+smallsh_commands.h
+smallsh_sighandler.c
+smallsh_sighandler.h
+smallsh_structs.h
+zip.txt
+: 
+: 
+: --------------------
+: ls out junk
+: : 
+: 
+: --------------------
+: cat junk (15 points for correctly returning contents of junk)
+: README.txt
+build
+junk
+main.c
+makefile
+p3testscript
+results.txt
+smallsh
+smallsh.c
+smallsh.h
+smallsh_childpids.c
+smallsh_childpids.h
+smallsh_commands.c
+smallsh_commands.h
+smallsh_sighandler.c
+smallsh_sighandler.h
+smallsh_structs.h
+zip.txt
+: 
+: 
+: --------------------
+: wc in junk (15 points for returning correct numbers from wc)
+:  18  18 237
+: 
+: 
+: --------------------
+: wc in junk out junk2; cat junk2 (10 points for returning correct numbers from wc)
+: :  18  18 237
+: 
+: 
+: --------------------
+: test -f badfile (10 points for returning error value of 1, note extraneous &)
+: : exit status 1
+: 
+: 
+: --------------------
+: wc in badfile (10 points for returning text error)
+: badfile: no such file or directory
+: 
+: 
+: --------------------
+: badfile (10 points for returning text error)
+: badfile: no such file or directory
+: 
+: 
+: --------------------
+: sleep 100 background (10 points for returning process ID of sleeper)
+: Background PID is 1194
+: 
+: 
+: --------------------
+: pkill -signal SIGTERM sleep (10 points for pid of killed process, 10 points for signal)
+: (Ignore message about Operation Not Permitted) for
+: background pid 1194 is done: terminated by signal 15
+: 
+: 
+: --------------------
+: sleep 1 background (10 pts for pid of bg ps when done, 10 for exit value)
+: Background PID is 1205
+: background pid 1205 is done: exit value 0
+: 
+: 
+: --------------------
+: pwd
+: /mnt/c/Users/George/SynologyDrive/School/Oregon State University/CS 344/Coding/Projects/cs-344-smallsh
+: 
+: 
+: --------------------
+: cd
+: : 
+: 
+: --------------------
+: pwd (10 points for being in the HOME dir)
+: /home/gkochera
+: 
+: 
+: --------------------
+: mkdir testdir1144
+: : 
+: 
+: --------------------
+: cd testdir1144
+: : 
+: 
+: --------------------
+: pwd (5 points for being in the newly created dir)
+: /home/gkochera/testdir1144
+: --------------------
+: Testing foreground-only mode (20 points for entry & exit text AND ~5 seconds between times)
+: 
+Entering foreground-only mode (& is now ignored)
+: Mon Feb  8 15:33:59 EST 2021
+: : Mon Feb  8 15:34:04 EST 2021
+: 
+Exiting foreground-only mode
+: 

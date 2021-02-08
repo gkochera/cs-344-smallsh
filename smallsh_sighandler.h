@@ -16,5 +16,5 @@ extern bool FOREGROUND_ONLY;
 // Used as consstants for the various signal calls to eliminate some code duplication
 #define IGNORE 0
 #define NOIGNORE 1
-#define EXIT 0
-#define NOEXIT 1
+
+#define NOEXIT 0

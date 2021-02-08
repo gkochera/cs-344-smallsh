@@ -20,24 +20,6 @@ SIGINT is CTRL + C and SIGTSTP is CTRL + Z
 // background and will ignore
 bool FOREGROUND_ONLY = false;
 
-/*
-This is our custom signal handler for honoring the CTRL + C / SIGINT signal.
-*/
-void handleSIGINTExit(int signo)
-{
-    // In keeping with using reentrant functions, we write a message to the terminal indicating
-    // that SIGINT killed the process by signal X where X is the number of the signal that fired
-    // causing termiantion. We then kill the process.
-    char message[300]; 
-    strcat(message, "terminated by signal ");
-    char signalNumber[10];
-    sprintf(signalNumber, "%d", signo);
-    strcat(message, signalNumber); 
-    write(STDOUT_FILENO, message, strlen(message));
-    fflush(stdout);
-    killpg(getpgrp(), signo);
-}
-
 
 /*
 This function attaches the appropriate signal handler for SIGINT (CTRL + C)
@@ -52,12 +34,6 @@ void attachSIGINT(int handlerOption)
     if (handlerOption == NOEXIT)
     {
         SIGINT_action.sa_handler = SIG_IGN;
-    }
-
-    // In the event we want to kill the process, we will use our custom handleSIGINTExit handler
-    else if (handlerOption == EXIT)
-    {
-        SIGINT_action.sa_handler = handleSIGINTExit;
     }
 
     // We want to block all catchable signals while our handler is running
