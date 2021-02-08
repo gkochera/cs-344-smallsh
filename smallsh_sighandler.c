@@ -28,7 +28,7 @@ SOURCE: https://linux.die.net/man/2/signal
 void attachSIGINT(int handlerOption)
 {
     // Initialize SIGINT_action to be empty
-    struct sigaction SIGINT_action = {0};
+    struct sigaction SIGINT_action = {{0}};
 
     // In the event we need to ignore SIGINT, we will use the SIG_IGN signal handler
     if (handlerOption == NOEXIT)
@@ -81,7 +81,7 @@ SOURCES: https://linux.die.net/man/2/signal
 void attachSIGTSTP(int hanlderOption)
 {
     // Initialize SIGTSTP_action to be empty
-    struct sigaction SIGTSTP_action = {0};
+    struct sigaction SIGTSTP_action = {{0}};
     
     // In the event we need to ignore SIGTSTP, we attach SIG_IGN to ignore the signal
     if (hanlderOption == IGNORE)
