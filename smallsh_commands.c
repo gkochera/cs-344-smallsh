@@ -428,7 +428,7 @@ void cmd_other(char ** tokens, char* status, struct smallshFileInfo* smallshFile
             setBackgroundProcessRedirection(smallshFileInfo, runInBackground);
 
             // Children running in the background should ignore SIGINT and SIGTSTP
-            if (runInBackground)
+            if (runInBackground && !FOREGROUND_ONLY)
             {
                 attachSIGINT(NOEXIT);
                 attachSIGTSTP(IGNORE);
